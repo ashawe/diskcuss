@@ -7,7 +7,10 @@
     <div>
         <h3>Available Rooms:</h3>
         {% for room in rooms %}
-        <p>id: {{room.id}}; name: <a href="{% url 'room' room.id %}">{{room.name}}</a></p>
+            <span>@{{room.host.username}}</span>
+            <p><a href="{% url 'room' room.id %}">{{room.name}}</a></p>
+            <small>{{room.topic.name}}</small>
+            <hr>
         {% endfor %}
     </div>
 </div>
