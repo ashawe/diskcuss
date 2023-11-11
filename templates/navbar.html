@@ -1,3 +1,9 @@
 <a href="/"><h1>Home</h1></a>
-<a href="/room">Room</a>
+
+<form action="{% url 'home' %}" method="get">
+    <input type="text" name="q" id="search-bar" placeholder="Search..."/>
+</form>
+
+<a href="{% url 'login' %}">Login</a>
+
 <hr>
