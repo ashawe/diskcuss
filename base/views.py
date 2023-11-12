@@ -5,7 +5,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
 from django.db.models import Q
 from django.contrib.auth.forms import UserCreationForm
-from .models import Room, Topic
+from .models import Room, Topic, Message
 from .forms import RoomForm
 
 # Create your views here.
@@ -69,7 +69,18 @@ def home(request):
 
 def room(request,pk):
     selectedRoom = Room.objects.get(id=pk)
-    context = {'room' : selectedRoom}
+    messages = selectedRoom.message_set.all().order_by('-created')
+    participants = selectedRoom.participants.all()
+    if request.method == "POST":
+        message = Message.objects.create(
+            user=request.user,
+            room=selectedRoom,
+            body=request.POST.get('body')
+        )
+        selectedRoom.participants.add(request.user)
+        return redirect('room',pk=selectedRoom.id)
+
+    context = {'room' : selectedRoom, 'roomMessages':messages, 'participants':participants}
     return render(request,'base/room.html',context)
 
 @login_required(login_url='login')
@@ -113,3 +124,17 @@ def deleteRoom(request, pk):
         room.delete()
         return redirect('home')
     return render(request, 'base/delete.html',{'obj':room})
+
+@login_required(login_url='login')
+def deleteMessage(request, pk):
+    message = Message.objects.get(id=pk)
+
+    if request.user != message.user:
+        messages.error(request,'Bad Request')
+        return redirect('home')
+
+    if request.method == 'POST':
+        roomid = message.room.id
+        message.delete()
+        return redirect('room',pk=roomid)
+    return render(request, 'base/delete.html',{'obj':message})
