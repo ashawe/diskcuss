@@ -3,10 +3,10 @@ from django.contrib.auth.models import User
 from django.contrib import messages
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required
-from django.db.models import Q
+from django.db.models import Q, Count
 from django.contrib.auth.forms import UserCreationForm
 from .models import Room, Topic, Message
-from .forms import RoomForm
+from .forms import RoomForm, UserForm
 
 # Create your views here.
 
@@ -61,7 +61,7 @@ def home(request):
         )
     
     room_count = rooms.count()
-    topics = Topic.objects.all()
+    topics = Topic.objects.all().annotate(num_posts=Count('room')).order_by('-num_posts')[0:5]
     if request.user.is_authenticated:
         room_messages = Message.objects.all().exclude(user=request.user)
     else:
@@ -90,7 +90,7 @@ def userProfile(request,pk):
     user = User.objects.get(id=pk)
     rooms = user.room_set.all()
     room_messages = user.message_set.all()
-    topics = Topic.objects.all()
+    topics = Topic.objects.all().annotate(num_posts=Count('room')).order_by('-num_posts')[0:5]
     context = {'user':user,'rooms':rooms,'room_messages':room_messages,'topics':topics}
     return render(request,'base/profile.html',context)
 
@@ -164,5 +164,18 @@ def deleteMessage(request, pk):
 
 @login_required(login_url='login')
 def updateUser(request):
-    context = {}
+    user = request.user
+    form = UserForm(instance=user)
+    if request.method == "POST":
+        form = UserForm(request.POST, instance=user)
+        if form.is_valid():
+            form.save()
+            return redirect('user-profile',pk=user.id)
+    context = {'form':form}
     return render(request,'base/update-user.html', context)
+
+def topicsPage(request):
+    q = request.GET.get('q') if request.GET.get('q') != None else ''
+    topics = Topic.objects.filter(name__icontains=q).annotate(num_posts=Count('room')).order_by('-num_posts')
+    context = {'topics':topics}
+    return render(request,'base/topics.html',context)
