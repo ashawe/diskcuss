@@ -179,3 +179,8 @@ def topicsPage(request):
     topics = Topic.objects.filter(name__icontains=q).annotate(num_posts=Count('room')).order_by('-num_posts')
     context = {'topics':topics}
     return render(request,'base/topics.html',context)
+
+def activityPage(request):
+    room_messages = Message.objects.all()
+    context = {'room_messages':room_messages}
+    return render(request,'base/activity.html',context)
